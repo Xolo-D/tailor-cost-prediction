@@ -1,0 +1,276 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Estimator – Tailor System</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="logo">
+        <div class="logo-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 4L4 20"/>
+                <path d="M20 4c0 0-2 0-4 2L4 18l2 2L18 8c2-2 2-4 2-4z"/>
+                <circle cx="4.5" cy="19.5" r="1.5" fill="currentColor" stroke="none"/>
+            </svg>
+        </div>
+        <span class="logo-text">Cost Estimator</span>
+    </div>
+
+    <button class="new-btn" onclick="resetForm()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        <span>New estimate</span>
+    </button>
+
+    <div class="sb-label">Recent</div>
+    <div class="recent-list">
+        {% for est in recent %}
+        <div class="recent {% if forloop.first %}active{% endif %}">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span title="{{ est.label }}">{{ est.label|truncatechars:32 }}</span>
+        </div>
+        {% empty %}
+        <div class="recent muted-item">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span>No estimates yet</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="sb-nav">
+        <a href="{% url 'estimator' %}" class="sb-nav-item active">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <span>Estimator</span>
+        </a>
+        <a href="{% url 'history' %}" class="sb-nav-item">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span>History</span>
+        </a>
+        <a href="{% url 'profile' %}" class="sb-nav-item">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Profile</span>
+        </a>
+        <a href="{% url 'logout' %}" class="sb-nav-item sb-nav-logout">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Sign Out</span>
+        </a>
+    </div>
+
+    <div class="sb-footer">
+        <div class="user-row">
+            <div class="avatar">{{ profile.avatar_initials }}</div>
+            <div>
+                <div class="user-name">{{ request.user.get_full_name|default:request.user.email }}</div>
+                <div class="user-meta">Tailor · ZAR</div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+    <div class="topbar">
+        <div class="topbar-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Cost Estimator — <span>New Estimate</span>
+        </div>
+    </div>
+
+    <div class="content">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert-bar alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="hero">
+            <div class="hero-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 4L4 20"/>
+                    <path d="M20 4c0 0-2 0-4 2L4 18l2 2L18 8c2-2 2-4 2-4z"/>
+                    <circle cx="4.5" cy="19.5" r="1.5" fill="currentColor" stroke="none"/>
+                </svg>
+            </div>
+            <h1 class="hero-title"><em>Tailoring Cost Estimator</em></h1>
+        </div>
+
+        <!-- FORM -->
+        <div class="form-card">
+            <form method="POST" id="estimateForm">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Garment Type *</label>
+                        <select name="garment" id="garmentType" required>
+                            <option value="">Select type</option>
+                            {% for val, label in form.garment.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.garment.value == val %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Fabric Type *</label>
+                        <select name="fabric_type" id="fabricType" required>
+                            <option value="">Select fabric type...</option>
+                            {% for val, label in form.fabric_type.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.fabric_type.value == val %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field full">
+                        <label>Fabric Meters *</label>
+                        <input type="number" name="fabric_m" id="fabricMeter"
+                               min="0.1" max="20" step="0.1"
+                               placeholder="e.g. 2.5"
+                               value="{{ form.fabric_m.value|default:'' }}"
+                               required />
+                    </div>
+                </div>
+                <button type="submit" class="est-btn" id="estBtn">
+                    <span id="btnTxt">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M20 4L4 20"/><path d="M20 4c0 0-2 0-4 2L4 18l2 2L18 8c2-2 2-4 2-4z"/><circle cx="4.5" cy="19.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+                        Estimate Cost &amp; Materials
+                    </span>
+                    <span class="dots" id="btnDots" style="display:none"><span></span><span></span><span></span></span>
+                </button>
+            </form>
+        </div>
+
+        <!-- RESULT (shown after POST or AJAX) -->
+        <div class="result {% if result %}vis{% endif %}" id="result">
+            <div class="result-panels">
+                <!-- Cost Estimation Panel -->
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <span class="panel-label">Cost Estimation</span>
+                        <span class="panel-badge badge-green">✓ Estimated</span>
+                    </div>
+                    <div>
+                        <div class="price-label">Production Cost</div>
+                        <div class="price-value" id="priceVal">
+                            {% if result %}R {{ result.total_cost|floatformat:2 }}{% else %}R 0{% endif %}
+                        </div>
+                        <div class="price-range" id="priceRange">
+                            {% if result %}
+                                <strong>Overhead:</strong> R {{ result.overhead_cost|floatformat:2 }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div id="costBreakItems" style="display:flex;flex-direction:column;gap:6px">
+                        {% if result %}
+                        <div class="break-row">
+                            <span class="break-key">Material</span>
+                            <span class="break-val">R {{ result.material_cost|floatformat:2 }}</span>
+                        </div>
+                        <div class="break-row">
+                            <span class="break-key">Overhead (8%)</span>
+                            <span class="break-val">R {{ result.overhead_cost|floatformat:2 }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Material Estimation Panel -->
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <span class="panel-label">Material Estimation</span>
+                        <span class="panel-badge badge-blue">✓ Calculated</span>
+                    </div>
+                    <div>
+                        <div class="price-label">Material Cost</div>
+                        <div class="mat-value" id="matVal">
+                            {% if result %}R {{ result.material_cost|floatformat:2 }}{% else %}R 0{% endif %}
+                        </div>
+                        <div class="mat-sub" id="matSub">
+                            {% if result %}
+                                <strong>{{ result.fabric_m }}m</strong> × R{{ result.price_per_m }}/m
+                                · {{ result.fabric_type }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div id="matBreakItems" style="display:flex;flex-direction:column;gap:6px">
+                        {% if result %}
+                        <div class="break-row">
+                            <span class="break-key">Fabric</span>
+                            <span class="break-val mat-val-sm">{{ result.fabric_type }}</span>
+                        </div>
+                        <div class="break-row">
+                            <span class="break-key">Metres</span>
+                            <span class="break-val mat-val-sm">{{ result.fabric_m }}m</span>
+                        </div>
+                        <div class="break-row">
+                            <span class="break-key">Price/m</span>
+                            <span class="break-val mat-val-sm">R {{ result.price_per_m }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Breakdown strips -->
+            {% if result %}
+            <div class="breakdown" id="breakdown">
+                <div class="bk-cell">
+                    <div class="bk-key">Garment</div>
+                    <div class="bk-val">{{ result.garment }}</div>
+                </div>
+                <div class="bk-cell">
+                    <div class="bk-key">Fabric</div>
+                    <div class="bk-val">{{ result.fabric_type }}</div>
+                </div>
+                <div class="bk-cell">
+                    <div class="bk-key">Metres</div>
+                    <div class="bk-val">{{ result.fabric_m }}m</div>
+                </div>
+                <div class="bk-cell">
+                    <div class="bk-key">Price/m</div>
+                    <div class="bk-val">R{{ result.price_per_m }}</div>
+                </div>
+            </div>
+
+            <div class="mat-breakdown" id="matBreakdown">
+                <div class="mat-cell">
+                    <div class="mat-key">Material Cost</div>
+                    <div class="mat-val">R {{ result.material_cost|floatformat:2 }}</div>
+                </div>
+                <div class="mat-cell">
+                    <div class="bk-key">Total Cost</div>
+                    <div class="bk-val" style="color:var(--amber);font-weight:700">R {{ result.total_cost|floatformat:2 }}</div>
+                </div>
+            </div>
+
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- BOTTOM BAR -->
+    <div class="input-bar">
+        <div class="input-row">
+            <span class="cost-badge">COST</span>
+            <input type="text" id="chatIn"
+                   placeholder="Describe a garment... e.g. 'silk dress 3m'"
+                   onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="send-btn" onclick="sendChat()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+        </div>
+        <div class="hint"><kbd>↵</kbd> send · try: <em>"silk dress 3m"</em> or <em>"denim jacket 2.5m"</em></div>
+    </div>
+</main>
+
+<script src="{% static 'js/estimator.js' %}"></script>
+</body>
+</html>

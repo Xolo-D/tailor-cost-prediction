@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login – Tailor Cost Estimator</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body class="auth-body">
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="logo-icon">✦</div>
+        </div>
+        <h1 class="auth-title">Tailor Cost<br>Prediction System</h1>
+        <p class="auth-sub">University of Zululand</p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" action="{% url 'login' %}" class="auth-form">
+            {% csrf_token %}
+            <div class="auth-field">
+                <input type="email" name="username" placeholder="Enter your email" required autocomplete="email">
+            </div>
+            <div class="auth-field">
+                <input type="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <div class="auth-links">
+                <a href="#">Forgot Password?</a>
+                <a href="{% url 'register' %}">Don't have an account? Sign up</a>
+            </div>
+            <button type="submit" class="auth-btn">Log In</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
