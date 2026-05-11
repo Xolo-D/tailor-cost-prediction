@@ -1,10 +1,14 @@
-from django.apps import apps
+from django.apps import AppConfig
 
-def predict_ajax(request):
-    model = apps.get_app_config('estimator').model
-    if model:
-        # Use the model for prediction
-        prediction = model.predict(input_data)
-    else:
-        # Fallback logic if model not loaded
-        prediction = calculate_fallback_cost(input_data)
+class EstimatorConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'estimator'
+    
+    def ready(self):
+        """Load ML model when Django starts"""
+        try:
+            from .ml.predictor import predictor
+            predictor.load()
+            print("✅ Predictor loaded successfully")
+        except Exception as e:
+            print(f"Error loading predictor: {e}")
